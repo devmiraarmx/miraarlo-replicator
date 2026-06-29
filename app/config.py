@@ -12,6 +12,8 @@ class Config:
     FERNET_KEY = os.getenv('FERNET_KEY', '')
     MP_ACCESS_TOKEN = os.getenv('MP_ACCESS_TOKEN', '')
     MP_PUBLIC_KEY = os.getenv('MP_PUBLIC_KEY', '')
+    ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@publicadorzap.com')
+    ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'changeme123')
 
 
 class DevelopmentConfig(Config):

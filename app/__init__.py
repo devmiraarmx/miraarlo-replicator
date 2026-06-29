@@ -18,6 +18,7 @@ def create_app(config_name=None):
 
     _init_extensions(app)
     _register_blueprints(app)
+    _register_cli(app)
 
     return app
 
@@ -37,6 +38,11 @@ def _init_extensions(app):
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+
+
+def _register_cli(app):
+    from app.cli import seed_db_command
+    app.cli.add_command(seed_db_command)
 
 
 def _register_blueprints(app):
