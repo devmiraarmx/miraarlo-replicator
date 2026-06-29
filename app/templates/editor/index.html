@@ -37,6 +37,9 @@
         <span class="status-dot {% if token_status == 'configured' %}ok{% endif %}" style="position:absolute;top:6px;right:6px;width:6px;height:6px;"></span>
       </button>
       <div class="settings-menu" id="settingsMenu">
+        <a href="{{ url_for('billing.plans') }}" class="settings-menu-item">
+          <i data-lucide="credit-card"></i> Comprar créditos
+        </a>
         <button class="settings-menu-item" onclick="refreshToken(); closeSettings();">
           <i data-lucide="refresh-cw"></i> Reconectar token ML
         </button>

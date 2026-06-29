@@ -82,8 +82,40 @@ def enhance():
 @editor_bp.route('/publish', methods=['POST'])
 @login_required
 def publish():
+    from app.models import Publication
+    from app.extensions import db
+
+    # Verificar saldo antes de publicar
+    row = db.session.execute(
+        db.text("SELECT available_credits FROM user_credit_balance WHERE user_id = :uid"),
+        {'uid': current_user.id}
+    ).fetchone()
+    available = int(row[0]) if row else 0
+    if available < 1:
+        return jsonify({
+            'success': False,
+            'error': 'sin_creditos',
+            'message': 'No tienes créditos disponibles. Compra un paquete para seguir publicando.',
+        }), 402
+
     meli = _meli_for_user()
-    result = meli.publish_item(request.json)
+    data = request.json
+    result = meli.publish_item(data)
+
+    if result.get('success'):
+        pub = Publication(
+            user_id=current_user.id,
+            source_mlm=data.get('mlm_id', ''),
+            new_mlm=result.get('new_id', ''),
+            title=(data.get('title', ''))[:100],
+            category_id=data.get('category_id', ''),
+            price=data.get('price'),
+            status='published',
+            credits_used=1,
+        )
+        db.session.add(pub)
+        db.session.commit()
+
     return jsonify(result)
 
 

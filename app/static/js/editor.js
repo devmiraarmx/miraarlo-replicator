@@ -45,6 +45,12 @@ async function loadCredits() {
       const d = await r.json();
       const el = document.getElementById('creditsCount');
       if (el) el.textContent = d.available ?? '?';
+      // Deshabilitar publicar si no hay créditos
+      const publishBtn = document.getElementById('publishBtn');
+      if (publishBtn && d.available === 0) {
+        publishBtn.disabled = true;
+        publishBtn.title = 'Sin créditos — compra un paquete';
+      }
     }
   } catch (_) {}
 }
@@ -380,7 +386,15 @@ async function publishItem() {
       body: JSON.stringify(payload())
     });
     const data = await res.json();
-    if (!data.success) { toast(friendlyError(data.error), 'error'); return; }
+    if (!data.success) {
+      if (data.error === 'sin_creditos') {
+        toast('Sin créditos — ' + data.message, 'error');
+        setTimeout(() => { window.location.href = '/billing/plans'; }, 2500);
+        return;
+      }
+      toast(friendlyError(data.error), 'error');
+      return;
+    }
 
     // Show preview card
     const preview = document.getElementById('publishPreview');

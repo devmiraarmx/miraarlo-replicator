@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pago pendiente — Publicador Zap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <style>
+    body { background: var(--bg-deep); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .result-card {
+      background: var(--bg-dark-2); border: 1px solid rgba(245,183,49,.3);
+      border-radius: var(--r); padding: 40px 32px; text-align: center;
+      max-width: 420px; width: 100%;
+      animation: fadeUp .5s ease-out;
+    }
+    .result-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: rgba(245,183,49,.1); border: 2px solid rgba(245,183,49,.3);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .result-icon i { width: 36px; height: 36px; color: var(--gold); }
+    h1 { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    p { font-size: 14px; color: var(--text-light); margin-bottom: 28px; line-height: 1.6; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-hover) 100%);
+      color: var(--bg-deep); font-weight: 700; font-size: 15px;
+      border: none; border-radius: var(--r-sm); cursor: pointer;
+      font-family: var(--font); text-decoration: none;
+      transition: all .2s; box-shadow: var(--shadow-gold);
+    }
+    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-primary i { width: 18px; height: 18px; }
+  </style>
+</head>
+<body>
+  <div class="result-card">
+    <div class="result-icon"><i data-lucide="clock"></i></div>
+    <h1>Pago en proceso</h1>
+    <p>Tu pago está siendo procesado. Recibirás una notificación cuando se confirme. Los créditos se acreditarán automáticamente.</p>
+    <a href="{{ url_for('editor.index') }}" class="btn-primary">
+      <i data-lucide="zap"></i> Volver al editor
+    </a>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>
