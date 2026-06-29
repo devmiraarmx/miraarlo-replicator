@@ -1,5 +1,110 @@
-{% extends 'base.html' %}
-{% block title %}Admin — Publicador Zap{% endblock %}
-{% block content %}
-<p>Panel de administración — próximamente (Fase 3)</p>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Publicador Zap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+
+{% include 'admin/_header.html' %}
+
+<div class="admin-page">
+  <div class="admin-page-title">Panel de administración</div>
+  <p class="admin-page-sub">Vista global del sistema</p>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label"><i data-lucide="users"></i> Usuarios</div>
+      <div class="stat-value">{{ total_users }}</div>
+      <div class="stat-sub">{{ active_users }} activos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i data-lucide="package"></i> Publicaciones</div>
+      <div class="stat-value green">{{ total_pubs }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i data-lucide="dollar-sign"></i> Ingresos</div>
+      <div class="stat-value gold">${{ "{:,.0f}".format(total_revenue) }}</div>
+      <div class="stat-sub">MXN total</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i data-lucide="zap"></i> Créditos</div>
+      <div class="stat-value purple">{{ credits_sold }}</div>
+      <div class="stat-sub">{{ credits_used }} consumidos</div>
+    </div>
+  </div>
+
+  <div class="admin-grid">
+
+    <!-- Últimas transacciones -->
+    <div class="admin-card">
+      <div class="admin-card-title"><i data-lucide="receipt"></i> Últimas transacciones</div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Créditos</th>
+            <th>Monto</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in recent_txns %}
+          <tr>
+            <td class="mono">{{ t.user.email if t.user else '—' }}</td>
+            <td><strong>+{{ t.credits }}</strong></td>
+            <td class="mono">
+              {% if t.amount_mxn and t.amount_mxn > 0 %}${{ "{:,.0f}".format(t.amount_mxn) }}{% else %}<span class="muted">Gratis</span>{% endif %}
+            </td>
+            <td><span class="status-pill {{ t.mp_status }}">{{ t.mp_status }}</span></td>
+            <td class="mono muted">{{ t.created_at.strftime('%d/%m/%y') if t.created_at else '—' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="empty-cell">Sin transacciones.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Top usuarios -->
+    <div class="admin-card">
+      <div class="admin-card-title"><i data-lucide="trophy"></i> Top usuarios por publicaciones</div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Email</th>
+            <th>Publicaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in top_users %}
+          <tr>
+            <td class="mono muted">{{ loop.index }}</td>
+            <td class="mono">{{ row.email }}</td>
+            <td><strong>{{ row.pub_count }}</strong></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" class="empty-cell">Sin datos.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div style="padding:12px 14px;border-top:1px solid var(--border);">
+        <a href="{{ url_for('admin.users') }}" class="admin-link">Ver todos los usuarios <i data-lucide="arrow-right"></i></a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

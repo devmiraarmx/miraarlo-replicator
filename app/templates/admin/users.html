@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usuarios — Admin Publicador Zap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+
+{% include 'admin/_header.html' %}
+
+<div class="admin-page">
+  <div class="admin-page-title">Usuarios</div>
+  <p class="admin-page-sub">{{ users|length }} resultado(s)</p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flash-list">
+        {% for category, message in messages %}
+          <li class="flash-item {{ category }}"><i data-lucide="info"></i> {{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Filtros -->
+  <form method="get" class="filters-bar">
+    <input class="filter-input" type="text" name="q" placeholder="Buscar por email…" value="{{ q }}">
+    <select class="filter-select" name="active">
+      <option value="" {% if filter_active == '' %}selected{% endif %}>Todos</option>
+      <option value="1" {% if filter_active == '1' %}selected{% endif %}>Activos</option>
+      <option value="0" {% if filter_active == '0' %}selected{% endif %}>Inactivos</option>
+    </select>
+    <button type="submit" class="filter-btn">Filtrar</button>
+  </form>
+
+  <div class="admin-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Nickname</th>
+          <th>Créditos</th>
+          <th>Estado</th>
+          <th>Admin</th>
+          <th>Registro</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td class="mono">{{ u.email }}</td>
+          <td class="muted">{{ u.nickname or '—' }}</td>
+          <td><strong>{{ balances.get(u.id, 0) }}</strong></td>
+          <td>
+            <span class="status-pill {{ 'active' if u.is_active else 'inactive' }}">
+              {{ 'Activo' if u.is_active else 'Inactivo' }}
+            </span>
+          </td>
+          <td>
+            {% if u.is_admin %}<span class="status-pill trial">Sí</span>{% else %}<span class="muted">—</span>{% endif %}
+          </td>
+          <td class="mono muted">{{ u.created_at.strftime('%d/%m/%y') if u.created_at else '—' }}</td>
+          <td>
+            <a href="{{ url_for('admin.user_detail', user_id=u.id) }}" class="btn-sm purple">
+              <i data-lucide="eye"></i> Ver
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="empty-cell">Sin usuarios.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>
