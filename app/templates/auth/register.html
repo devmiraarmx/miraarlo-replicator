@@ -1,5 +1,98 @@
 {% extends 'base.html' %}
-{% block title %}Registro — Publicador Zap{% endblock %}
+{% block title %}Crear cuenta — Publicador Zap{% endblock %}
+
+{% block head %}
+<style>
+  body { background: var(--bg-deep); display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .auth-card {
+    width: 100%; max-width: 420px; margin: 24px 16px;
+    background: var(--bg-dark); border: 1px solid rgba(245,183,49,.15);
+    border-radius: var(--r); padding: 40px 36px; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+  .auth-logo { text-align: center; margin-bottom: 28px; }
+  .auth-logo-icon {
+    width: 56px; height: 56px; background: var(--gold); border-radius: 14px;
+    display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;
+    box-shadow: 0 4px 20px var(--gold-glow);
+  }
+  .auth-logo-icon svg { width: 28px; height: 28px; color: var(--bg-deep); }
+  .auth-title { font-size: 22px; font-weight: 700; color: var(--text-white); margin-bottom: 4px; }
+  .auth-sub { font-size: 13px; color: var(--text-3); }
+
+  .trial-badge {
+    background: var(--gold-light); border: 1px solid rgba(245,183,49,.3);
+    border-radius: var(--r-sm); padding: 10px 14px; margin-bottom: 20px;
+    font-size: 12px; color: var(--gold); text-align: center; font-weight: 500;
+  }
+
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-light); margin-bottom: 6px; letter-spacing: .03em; text-transform: uppercase; }
+  .form-input {
+    width: 100%; padding: 11px 14px; background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1); border-radius: var(--r-sm);
+    color: var(--text-white); font-family: var(--font); font-size: 14px;
+    transition: border-color .2s, box-shadow .2s; outline: none;
+  }
+  .form-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-light); }
+  .form-input.error { border-color: var(--red); }
+  .form-error { font-size: 12px; color: #f87171; margin-top: 5px; }
+
+  .btn-primary {
+    width: 100%; padding: 13px; background: var(--gold); color: var(--bg-deep);
+    font-weight: 700; font-size: 15px; border: none; border-radius: var(--r-sm);
+    cursor: pointer; transition: background .2s, box-shadow .2s; font-family: var(--font);
+  }
+  .btn-primary:hover { background: var(--gold-hover); box-shadow: 0 4px 16px var(--gold-glow); }
+
+  .auth-footer { text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-3); }
+  .auth-footer a { color: var(--gold); text-decoration: none; font-weight: 500; }
+  .auth-footer a:hover { text-decoration: underline; }
+
+  .password-hint { font-size: 11px; color: var(--text-3); margin-top: 5px; }
+</style>
+{% endblock %}
+
 {% block content %}
-<p>Registro — próximamente (Fase 1, Paso 3)</p>
+<div class="auth-card">
+  <div class="auth-logo">
+    <div class="auth-logo-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    </div>
+    <div class="auth-title">Crea tu cuenta</div>
+    <div class="auth-sub">Empieza a publicar en Mercado Libre con IA</div>
+  </div>
+
+  <div class="trial-badge">
+    ⚡ 10 créditos de prueba gratis al registrarte — válidos 7 días
+  </div>
+
+  <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="form-group">
+      {{ form.email.label(class='form-label') }}
+      {{ form.email(class='form-input' + (' error' if form.email.errors else ''), placeholder='tu@correo.com', autocomplete='email') }}
+      {% for e in form.email.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="form-group">
+      {{ form.password.label(class='form-label') }}
+      {{ form.password(class='form-input' + (' error' if form.password.errors else ''), placeholder='••••••••', autocomplete='new-password') }}
+      {% for e in form.password.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+      <div class="password-hint">Mínimo 8 caracteres</div>
+    </div>
+
+    <div class="form-group">
+      {{ form.password_confirm.label(class='form-label') }}
+      {{ form.password_confirm(class='form-input' + (' error' if form.password_confirm.errors else ''), placeholder='••••••••', autocomplete='new-password') }}
+      {% for e in form.password_confirm.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+    </div>
+
+    {{ form.submit(class='btn-primary') }}
+  </form>
+
+  <div class="auth-footer">
+    ¿Ya tienes cuenta? <a href="{{ url_for('auth.login') }}">Inicia sesión</a>
+  </div>
+</div>
 {% endblock %}

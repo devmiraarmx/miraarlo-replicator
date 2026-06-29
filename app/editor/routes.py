@@ -1,31 +1,45 @@
 import requests as req_lib
 from flask import render_template, request, jsonify, send_file
+from flask_login import login_required, current_user
 from app.editor import editor_bp
 from app.editor.meli import MeliClient, BROWSER_HEADERS
 from app.editor.claude_helper import ClaudeHelper
 
-meli = MeliClient()
 claude = ClaudeHelper()
 
 
+def _meli_for_user():
+    """Devuelve un MeliClient inicializado con los tokens del usuario actual."""
+    meli = MeliClient()
+    if current_user.is_authenticated and current_user.ml_access_token:
+        meli.access_token = current_user.ml_access_token
+        meli.refresh_token_val = current_user.ml_refresh_token or ''
+    return meli
+
+
 @editor_bp.route('/')
+@login_required
 def index():
     auth_result = request.args.get('auth')
+    meli = _meli_for_user()
     token_status = "configured" if meli.has_token() else "missing"
     return render_template('editor/index.html', token_status=token_status, auth_result=auth_result)
 
 
 @editor_bp.route('/extract', methods=['POST'])
+@login_required
 def extract():
     data = request.json
     input_value = data.get('input', '').strip()
     if not input_value:
         return jsonify({'success': False, 'error': 'Ingresa un URL o ID de Mercado Libre.'})
+    meli = _meli_for_user()
     result = meli.extract_item(input_value)
     return jsonify(result)
 
 
 @editor_bp.route('/enhance', methods=['POST'])
+@login_required
 def enhance():
     data = request.json
     result = claude.enhance(
@@ -38,12 +52,15 @@ def enhance():
 
 
 @editor_bp.route('/publish', methods=['POST'])
+@login_required
 def publish():
+    meli = _meli_for_user()
     result = meli.publish_item(request.json)
     return jsonify(result)
 
 
 @editor_bp.route('/category-attributes', methods=['POST'])
+@login_required
 def category_attributes():
     data = request.json
     category_id = data.get('category_id', '').strip()
@@ -52,6 +69,7 @@ def category_attributes():
     if not category_id:
         return jsonify({'success': False, 'error': 'Sin categoría'})
 
+    meli = _meli_for_user()
     cat_attrs = meli.get_category_attributes(category_id)
 
     prefilled = {}
@@ -73,12 +91,16 @@ def category_attributes():
 
 
 @editor_bp.route('/refresh-token', methods=['POST'])
+@login_required
 def refresh_token():
+    meli = _meli_for_user()
     return jsonify(meli.refresh_token())
 
 
 @editor_bp.route('/me')
+@login_required
 def me():
+    meli = _meli_for_user()
     user = meli.get_me()
     if user:
         return jsonify({'success': True, 'id': user.get('id'), 'nickname': user.get('nickname')})
@@ -86,10 +108,12 @@ def me():
 
 
 @editor_bp.route('/predict-category', methods=['POST'])
+@login_required
 def predict_category():
     title = request.json.get('title', '')
     if not title:
         return jsonify({'success': False, 'error': 'Sin titulo'})
+    meli = _meli_for_user()
     cat = meli.predict_category(title)
     if cat:
         return jsonify({'success': True, 'category_id': cat})
@@ -97,6 +121,7 @@ def predict_category():
 
 
 @editor_bp.route('/category-path', methods=['POST'])
+@login_required
 def category_path():
     category_id = request.json.get('category_id', '').strip()
     if not category_id:
@@ -122,6 +147,7 @@ def category_path():
 
 
 @editor_bp.route('/export-excel', methods=['POST'])
+@login_required
 def export_excel():
     import openpyxl
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -215,6 +241,7 @@ def export_excel():
 
 
 @editor_bp.route('/download-photos', methods=['POST'])
+@login_required
 def download_photos():
     import zipfile
     from io import BytesIO
@@ -240,6 +267,7 @@ def download_photos():
 
 
 @editor_bp.route('/fill-template', methods=['POST'])
+@login_required
 def fill_template():
     import openpyxl
     import json as _json

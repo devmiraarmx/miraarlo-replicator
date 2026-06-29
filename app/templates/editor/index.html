@@ -924,12 +924,18 @@
     <span class="logo-text">Publicador Zap</span>
   </a>
 
-  <!-- Preserved hidden elements for JS compat -->
-  <div id="statusBadge" class="{% if token_status == 'configured' %}ok{% endif %}">
+  <!-- Badge de estado ML (mantenido para compatibilidad JS) -->
+  <div id="statusBadge" class="{% if token_status == 'configured' %}ok{% endif %}" style="display:none;">
     <span id="statusText">{% if token_status == 'configured' %}Conectado{% else %}Sin token{% endif %}</span>
   </div>
 
   <div class="header-actions">
+    <!-- Créditos disponibles -->
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(245,183,49,.1);border:1px solid rgba(245,183,49,.2);border-radius:20px;font-size:12px;font-weight:600;color:#f5b731;" id="creditsBadge">
+      <i data-lucide="zap" style="width:13px;height:13px;"></i>
+      <span id="creditsCount">...</span> créditos
+    </div>
+
     <div style="position:relative;">
       <button class="settings-btn" onclick="toggleSettings(event)">
         <i data-lucide="settings"></i>
@@ -937,14 +943,28 @@
       </button>
       <div class="settings-menu" id="settingsMenu">
         <button class="settings-menu-item" onclick="refreshToken(); closeSettings();">
-          <i data-lucide="refresh-cw"></i> Reconectar token
+          <i data-lucide="refresh-cw"></i> Reconectar token ML
         </button>
-        <a href="#" class="settings-menu-item" onclick="doOAuth(); closeSettings(); return false;">
-          <i data-lucide="log-in"></i> Autorizar cuenta ML
+        {% if token_status == 'configured' %}
+        <form method="POST" action="{{ url_for('auth.ml_disconnect') }}" style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="settings-menu-item" style="width:100%;text-align:left;">
+            <i data-lucide="unlink"></i> Desconectar ML
+          </button>
+        </form>
+        {% else %}
+        <a href="{{ url_for('auth.ml_connect') }}" class="settings-menu-item">
+          <i data-lucide="log-in"></i> Conectar Mercado Libre
         </a>
+        {% endif %}
         <button class="settings-menu-item" onclick="checkStatus(); closeSettings();">
           <i data-lucide="user"></i> Ver cuenta conectada
         </button>
+        <div style="border-top:1px solid rgba(255,255,255,.08);margin:4px 0;"></div>
+        <a href="{{ url_for('auth.logout') }}" class="settings-menu-item" style="color:#f87171;">
+          <i data-lucide="log-out"></i> Cerrar sesión
+          <span style="font-size:11px;color:#9b8db0;margin-left:auto;">{{ current_user.email }}</span>
+        </a>
       </div>
     </div>
   </div>
@@ -1309,9 +1329,20 @@
   }
 
   function doOAuth() {
-    const base = encodeURIComponent(window.location.origin);
-    window.location.href = `/auth?base_url=${base}`;
+    window.location.href = '{{ url_for("auth.ml_connect") }}';
   }
+
+  async function loadCredits() {
+    try {
+      const r = await fetch('/billing/balance');
+      if (r.ok) {
+        const d = await r.json();
+        const el = document.getElementById('creditsCount');
+        if (el) el.textContent = d.available ?? '?';
+      }
+    } catch (_) {}
+  }
+  loadCredits();
 
   // ── CARD TOGGLE ──────────────────────────────────────────
   function toggleCard(header) {
