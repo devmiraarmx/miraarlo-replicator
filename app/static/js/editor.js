@@ -1,6 +1,12 @@
 // Initialize Lucide icons
 lucide.createIcons();
 
+// ── CSRF-aware fetch helper ─────────────────────────────────
+function apiFetch(url, options = {}) {
+  const headers = { 'X-CSRFToken': window.CSRF_TOKEN, ...(options.headers || {}) };
+  return fetch(url, { ...options, headers });
+}
+
 let currentItem = null;
 let selectedPhotos = [];
 let categoryAttributes = [];
@@ -20,7 +26,7 @@ document.addEventListener('click', closeSettings);
 
 async function checkStatus() {
   try {
-    const res = await fetch('/me');
+    const res = await apiFetch('/me');
     const data = await res.json();
     if (data.success) {
       toast(`Conectado como: ${data.nickname} (${data.id})`, 'success');
@@ -34,7 +40,7 @@ function doOAuth() {
 
 async function loadCredits() {
   try {
-    const r = await fetch('/billing/balance');
+    const r = await apiFetch('/billing/balance');
     if (r.ok) {
       const d = await r.json();
       const el = document.getElementById('creditsCount');
@@ -61,7 +67,7 @@ async function extractItem() {
   renderDynAttrsLoading();
 
   try {
-    const res = await fetch('/extract', {
+    const res = await apiFetch('/extract', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ input })
     });
@@ -230,7 +236,7 @@ async function reloadCategoryAttrs() {
   renderDynAttrsLoading();
 
   try {
-    const res = await fetch('/category-attributes', {
+    const res = await apiFetch('/category-attributes', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         category_id: catId,
@@ -276,7 +282,7 @@ async function enhance(action, btn) {
   document.querySelectorAll('.ai-pill').forEach(b => b.disabled = true);
   if (btn) btn.classList.add('active');
   try {
-    const res = await fetch('/enhance', {
+    const res = await apiFetch('/enhance', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action,
@@ -369,7 +375,7 @@ async function publishItem() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span> Publicando…';
   try {
-    const res = await fetch('/publish', {
+    const res = await apiFetch('/publish', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload())
     });
@@ -449,7 +455,7 @@ function debouncePredictCategory(title) {
 
 async function predictCategoryFromTitle(title) {
   try {
-    const res = await fetch('/predict-category', {
+    const res = await apiFetch('/predict-category', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title })
     });
@@ -457,7 +463,7 @@ async function predictCategoryFromTitle(title) {
     if (data.success && data.category_id) {
       blankCategoryId = data.category_id;
       // Get breadcrumb
-      const pathRes = await fetch('/category-path', {
+      const pathRes = await apiFetch('/category-path', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category_id: data.category_id })
       });
@@ -483,7 +489,7 @@ function debounceCategoryPath(catId) {
   catPathTimer = setTimeout(async () => {
     blankCategoryId = catId;
     try {
-      const res = await fetch('/category-path', {
+      const res = await apiFetch('/category-path', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category_id: catId })
       });
@@ -533,7 +539,7 @@ async function loadCategoryBreadcrumb() {
   const catId = document.getElementById('fCategory').value.trim();
   if (!catId) return;
   try {
-    const res = await fetch('/category-path', {
+    const res = await apiFetch('/category-path', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ category_id: catId })
     });
@@ -639,7 +645,7 @@ async function fillTemplate() {
     const fd = new FormData();
     fd.append('template', selectedTemplateFile);
     fd.append('item_data', JSON.stringify(payload()));
-    const res = await fetch('/fill-template', { method: 'POST', body: fd });
+    const res = await apiFetch('/fill-template', { method: 'POST', body: fd });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: res.statusText }));
       toast('Error: ' + (err.error || res.statusText), 'error');
@@ -663,7 +669,7 @@ async function fillTemplate() {
 async function exportExcel() {
   if (!currentItem) return;
   toast('Generando Excel…', 'info');
-  const res = await fetch('/export-excel', {
+  const res = await apiFetch('/export-excel', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload())
   });
@@ -679,7 +685,7 @@ async function exportExcel() {
 async function downloadPhotos() {
   if (!currentItem || !selectedPhotos.length) { toast('Sin fotos disponibles', 'error'); return; }
   toast('Descargando fotos…', 'info');
-  const res = await fetch('/download-photos', {
+  const res = await apiFetch('/download-photos', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ photos: selectedPhotos, mlm_id: currentItem.mlm_id })
   });
@@ -694,7 +700,7 @@ async function downloadPhotos() {
 
 async function refreshToken() {
   toast('Refrescando token…', 'info');
-  const res = await fetch('/refresh-token', { method: 'POST' });
+  const res = await apiFetch('/refresh-token', { method: 'POST' });
   const data = await res.json();
   if (data.success) {
     const badge = document.getElementById('statusBadge');
