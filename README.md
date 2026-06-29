@@ -1,31 +1,40 @@
-# Miraarlo Replicator 🟡
+# Publicador Zap ⚡
 
-App web para extraer publicaciones de Mercado Libre, editarlas con Claude y publicarlas en la cuenta de Miraarlo.
+Herramienta web para extraer publicaciones de Mercado Libre, optimizarlas con Claude AI y republicarlas en la cuenta de Miraarlo — todo desde el celular.
 
-## Flujo
+## Flujo principal
 
 ```
-Extraer (URL o MLM) → Auto-categoría + Atributos dinámicos → Editar con Claude → Publicar en Miraarlo
+URL o MLM → Extracción + Auto-categoría → Atributos dinámicos → Edición con Claude AI → Publicar en Miraarlo
 ```
 
-## Novedades v2
+## Características
 
-- **Auto-detección de categoría**: al extraer, si la API no devuelve categoría, el sistema la predice automáticamente por título
-- **Atributos dinámicos obligatorios**: se consultan los atributos requeridos de la categoría y se renderizan como campos editables
-- **Pre-llenado inteligente**: los atributos que ya vienen en los datos extraídos se pre-llenan automáticamente
-- **Campos con valores permitidos**: si ML define opciones válidas para un atributo, se muestra un dropdown
-- **Botón "Recargar atributos"**: permite refrescar los atributos si cambias la categoría manualmente
-- **Fix sidebar atributos**: ahora muestra nombre y valor correctamente (antes mostraba `[object Object]`)
+**Extracción inteligente** — Acepta URLs de producto, IDs tipo `MLM123456789` y productos de catálogo. Combina datos de la API pública con scraping vía `curl_cffi` (impersonación TLS de Chrome) para evadir bloqueos anti-bot de ML.
 
-## Setup rápido
+**Auto-categoría y atributos** — Al extraer, el sistema predice la categoría por título si la API no la devuelve. Consulta los atributos obligatorios de la categoría y los renderiza como campos editables con dropdowns para valores permitidos y pre-llenado automático con datos del item original.
 
-### 1. Clonar y entrar al proyecto
+**Optimización con Claude AI** — Cinco acciones integradas con la API de Anthropic:
+- Mejorar título (máx. 60 caracteres)
+- Reescribir descripción (texto plano, fluido)
+- Optimizar SEO para búsquedas de ML
+- Adaptar tono a la voz de Miraarlo
+- Agregar palabras clave de forma natural
+
+**Publicación robusta** — Detecta automáticamente si la cuenta usa el modelo `user_product_seller` (envía `family_name`) o el estándar (envía `title`). Maneja fallback de shipping (`me2` → `not_specified`), herencia de atributos del item original (GTIN, EAN, UPC, SIZE_GRID_ID), dimensiones de paquete, e inyección de descripción post-publicación.
+
+**Modo creación en blanco** — Permite crear productos desde cero: sube fotos desde cámara o galería, escribe título y categoría, y pasa al editor completo con atributos dinámicos.
+
+**Exportación** — Genera Excel formateado del listing, rellena plantillas oficiales de ML, y descarga fotos como ZIP.
+
+## Setup
+
+### 1. Clonar e instalar
+
 ```bash
+git clone https://github.com/devmiraarmx/miraarlo-replicator.git
 cd miraarlo-replicator
-```
 
-### 2. Crear entorno virtual e instalar dependencias
-```bash
 python -m venv venv
 source venv/bin/activate        # Mac/Linux
 venv\Scripts\activate           # Windows
@@ -33,73 +42,85 @@ venv\Scripts\activate           # Windows
 pip install -r requirements.txt
 ```
 
-### 3. Configurar variables de entorno
+### 2. Configurar variables de entorno
+
 ```bash
 cp .env.example .env
 ```
 
-Edita `.env` y llena:
-- `ML_CLIENT_SECRET` — tu clave secreta de la app ML de Miraarlo
-- `ML_ACCESS_TOKEN` — token actual de Miraarlo
-- `ML_REFRESH_TOKEN` — refresh token de Miraarlo
-- `ANTHROPIC_API_KEY` — tu API key de Anthropic
+Edita `.env` con tus credenciales:
 
-### 4. Correr la app
+| Variable | Descripción |
+|----------|-------------|
+| `ML_CLIENT_ID` | ID de la app registrada en ML Developers |
+| `ML_CLIENT_SECRET` | Secret de la app ML |
+| `ML_REDIRECT_URI` | URL de callback OAuth (default: `http://localhost:5000/auth/callback`) |
+| `ML_ACCESS_TOKEN` | Token de acceso (se puede obtener vía OAuth desde la app) |
+| `ML_REFRESH_TOKEN` | Refresh token (se actualiza automáticamente) |
+| `ANTHROPIC_API_KEY` | API key de Anthropic para Claude |
+
+### 3. Ejecutar
+
 ```bash
 python app.py
 ```
 
-Abre http://localhost:5000
+Abre `http://localhost:5000`
 
----
+## Obtener tokens de Mercado Libre
 
-## Obtener tokens ML
+**Desde la app (recomendado)** — Clic en ⚙️ → OAuth ML. Autoriza en Mercado Libre y los tokens se guardan automáticamente en `.env`.
 
-### Opción A — Desde el VBA (rápido)
-Si tienes el macro `Obtener_Campo.bas` activo en Excel con tokens válidos, copia los valores de `m_AccessToken` y `m_RefreshToken` directamente al `.env`.
-
-### Opción B — OAuth desde la app
-1. Asegúrate de que `ML_CLIENT_SECRET` esté en el `.env`
-2. Haz clic en **🔑 OAuth ML** en la app
-3. Autoriza en Mercado Libre
-4. Los tokens se guardan automáticamente en el `.env`
-
----
+**Manual** — Si tienes tokens de otra fuente (VBA, Postman, etc.), pégalos directamente en el `.env`.
 
 ## Estructura del proyecto
 
 ```
 miraarlo-replicator/
-├── app.py              # Flask — rutas principales + endpoint /category-attributes
-├── meli.py             # Cliente ML API + auto-categoría + atributos dinámicos
-├── claude_helper.py    # Integración Claude API
+├── app.py              # Flask — rutas, OAuth, exportación Excel/ZIP
+├── meli.py             # Cliente ML: extracción, scraping, categorías, publicación
+├── claude_helper.py    # 5 acciones de IA vía Anthropic API
 ├── templates/
-│   └── index.html      # Interfaz con atributos dinámicos
-├── .env                # Variables (no subir a git)
-├── .env.example        # Plantilla de variables
+│   └── index.html      # UI mobile-first (Gold × Purple)
+├── .env.example        # Plantilla de variables (sin credenciales)
+├── .gitignore
 └── requirements.txt
 ```
 
----
-
-## Endpoints API
+## Endpoints
 
 | Ruta | Método | Descripción |
 |------|--------|-------------|
 | `/extract` | POST | Extrae datos + auto-categoría + atributos obligatorios |
 | `/category-attributes` | POST | Consulta atributos obligatorios de una categoría |
-| `/enhance` | POST | Mejora contenido con Claude |
-| `/publish` | POST | Publica en Miraarlo (usa `dynamic_attrs`) |
+| `/category-path` | POST | Devuelve breadcrumb de la categoría |
 | `/predict-category` | POST | Predice categoría por título |
-| `/export-excel` | POST | Genera Excel del listing |
+| `/enhance` | POST | Mejora contenido con Claude AI |
+| `/publish` | POST | Publica en Miraarlo con atributos dinámicos |
+| `/export-excel` | POST | Genera Excel formateado del listing |
 | `/fill-template` | POST | Rellena plantilla oficial de ML |
 | `/download-photos` | POST | Descarga fotos como ZIP |
+| `/auth` | GET | Inicia flujo OAuth con ML |
+| `/auth/callback` | GET | Callback OAuth — guarda tokens en `.env` |
+| `/refresh-token` | POST | Renueva access token |
+| `/me` | GET | Valida token y devuelve datos de la cuenta |
 
----
+## Stack técnico
+
+- **Backend**: Flask + Python 3.10+
+- **Scraping**: `curl_cffi` con impersonación Chrome 136, `BeautifulSoup`
+- **AI**: Anthropic API (Claude Sonnet)
+- **ML API**: OAuth 2.0, endpoints de items/categories/pictures
+- **Frontend**: HTML/CSS/JS vanilla, Inter + JetBrains Mono, Lucide icons
+- **Exportación**: `openpyxl` para Excel
 
 ## Notas
 
-- La extracción funciona **sin token** para publicaciones públicas de ML
-- Para publicar necesitas tokens válidos de la cuenta Miraarlo
-- Los atributos obligatorios se cargan automáticamente al extraer
-- Si cambias la categoría manualmente, usa "Recargar atributos" para actualizar los campos
+- La extracción funciona sin token para publicaciones públicas
+- Para publicar se requieren tokens válidos de la cuenta Miraarlo
+- Los atributos obligatorios se cargan automáticamente al extraer; si cambias la categoría, usa "Recargar atributos"
+- Las imágenes se suben vía API de ML (URL o base64) antes de publicar
+
+---
+
+Hecho con ⚡ por devmiraarmx

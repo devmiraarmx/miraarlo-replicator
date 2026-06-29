@@ -36,7 +36,7 @@ class MeliClient:
     TOKEN_URL = "https://api.mercadolibre.com/oauth/token"
 
     def __init__(self):
-        self.client_id = os.getenv('ML_CLIENT_ID', '1928213031259439')
+        self.client_id = os.getenv('ML_CLIENT_ID', '3509386763056859')
         self.client_secret = os.getenv('ML_CLIENT_SECRET', '')
         self.redirect_uri = os.getenv('ML_REDIRECT_URI', 'https://miraar.mx/')
         self.access_token = os.getenv('ML_ACCESS_TOKEN', '')
