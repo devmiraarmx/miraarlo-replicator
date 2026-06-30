@@ -7,9 +7,56 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-deep: #0c0318; --bg-dark: #130826; --bg-dark-2: #1e0f3a; --bg-dark-3: #2d1456;
+      --gold: #f5b731; --gold-hover: #e5a520; --gold-light: rgba(245,183,49,.12); --gold-glow: rgba(245,183,49,.35);
+      --purple: #8b5cf6; --purple-hover: #7c3aed; --purple-light: rgba(139,92,246,.1);
+      --green: #10b981; --red: #ef4444; --red-light: #fef2f2;
+      --text: #1e1033; --text-2: #6b5b7b; --text-3: #9b8db0; --text-light: #d4c8e8; --text-white: #f0ebfa;
+      --border: #d8d0ea; --surface: #f3efff;
+      --shadow: 0 4px 12px rgba(12,3,24,.1); --shadow-md: 0 8px 24px rgba(12,3,24,.12);
+      --r: 14px; --r-sm: 10px; --r-xs: 6px;
+      --font: 'Inter', -apple-system, sans-serif; --mono: 'JetBrains Mono', monospace;
+    }
+    html { height: 100%; }
+    body { background: #faf8ff; color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.6; min-height: 100%; }
+
+    /* ── Flash messages ── */
+    .flash-container { position: fixed; top: 16px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; max-width: 380px; }
+    .flash { padding: 12px 16px; border-radius: var(--r-sm); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-md); animation: slideIn .25s ease; }
+    .flash-success { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
+    .flash-danger  { background: var(--red-light); color: #991b1b; border: 1px solid #fca5a5; }
+    .flash-info    { background: var(--purple-light); color: #4c1d95; border: 1px solid var(--purple); }
+    .flash-warning { background: var(--gold-light); color: #92400e; border: 1px solid var(--gold); }
+    .flash-close   { margin-left: auto; cursor: pointer; opacity: .6; background: none; border: none; font-size: 16px; line-height: 1; color: inherit; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+  </style>
   {% block head %}{% endblock %}
 </head>
 <body>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container" id="flashContainer">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">
+            <span>{{ message }}</span>
+            <button class="flash-close" onclick="this.parentElement.remove()">×</button>
+          </div>
+        {% endfor %}
+      </div>
+      <script>
+        setTimeout(() => {
+          const c = document.getElementById('flashContainer');
+          if (c) c.style.opacity = '0', c.style.transition = 'opacity .4s', setTimeout(() => c.remove(), 400);
+        }, 5000);
+      </script>
+    {% endif %}
+  {% endwith %}
+
   {% block content %}{% endblock %}
+
 </body>
 </html>
