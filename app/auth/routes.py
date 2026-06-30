@@ -2,12 +2,13 @@ from datetime import datetime, timedelta
 from flask import redirect, request, session, render_template, flash, url_for
 from flask_login import login_user, logout_user, login_required, current_user
 from app.auth import auth_bp
-from app.extensions import db, bcrypt
+from app.extensions import db, bcrypt, limiter
 
 
 # ── Email + contraseña ──────────────────────────────────────────────────────
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
+@limiter.limit("5 per minute; 20 per hour")
 def register():
     from app.auth.forms import RegisterForm
     from app.models import User, CreditTransaction, CreditPackage
@@ -45,6 +46,7 @@ def register():
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute; 50 per hour")
 def login():
     from app.auth.forms import LoginForm
     from app.models import User
