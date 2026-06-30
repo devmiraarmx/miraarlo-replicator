@@ -30,9 +30,10 @@ _CSP = {
     'font-src': ["'self'", "https://fonts.gstatic.com"],
     'img-src': ["'self'", "data:", "https://*.mlstatic.com", "https://http2.mlstatic.com",
                 "https://*.mercadolibre.com", "https://*.mercadolibre.com.mx"],
-    'connect-src': ["'self'", "https://api.mercadolibre.com",
+    'connect-src': ["'self'", "https://api.mercadolibre.com", "https://unpkg.com",
                     "https://www.mercadopago.com", "https://*.mercadopago.com"],
     'frame-src': ["https://www.mercadopago.com", "https://*.mercadopago.com"],
+    'manifest-src': ["'self'"],
     'object-src': ["'none'"],
     'base-uri': ["'self'"],
 }
