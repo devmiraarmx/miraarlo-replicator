@@ -140,10 +140,11 @@ def ml_callback():
         ml_user_id = me_data.get('id')
         ml_nickname = me_data.get('nickname')
 
-    # Guardar en el usuario actual (tokens en texto plano — Paso 4 agrega Fernet)
+    # Guardar en el usuario actual con tokens cifrados con Fernet
+    from app.utils.crypto import encrypt_token
     user = current_user._get_current_object()
-    user.ml_access_token = access_token
-    user.ml_refresh_token = refresh_token
+    user.ml_access_token = encrypt_token(access_token)
+    user.ml_refresh_token = encrypt_token(refresh_token)
     user.ml_token_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
     if ml_user_id:
         user.ml_user_id = ml_user_id
@@ -151,7 +152,7 @@ def ml_callback():
         user.nickname = ml_nickname
     db.session.commit()
 
-    flash(f'Cuenta de Mercado Libre conectada correctamente.', 'success')
+    flash('Cuenta de Mercado Libre conectada correctamente.', 'success')
     return redirect(url_for('editor.index') + '?auth=success')
 
 

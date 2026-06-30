@@ -1,20 +1,48 @@
 import requests as req_lib
+from datetime import datetime, timedelta
 from flask import render_template, request, jsonify, send_file
 from flask_login import login_required, current_user
 from app.editor import editor_bp
 from app.editor.meli import MeliClient, BROWSER_HEADERS
 from app.editor.claude_helper import ClaudeHelper
+from app.utils.crypto import encrypt_token, decrypt_token
 
 claude = ClaudeHelper()
 
 
+class MeliClientDB(MeliClient):
+    """MeliClient que lee y persiste tokens cifrados en la DB del usuario."""
+
+    def __init__(self, user):
+        super().__init__()
+        self._user = user
+        self.access_token = decrypt_token(user.ml_access_token) if user.ml_access_token else ''
+        self.refresh_token_val = decrypt_token(user.ml_refresh_token) if user.ml_refresh_token else ''
+
+    def _persist_tokens(self):
+        from app.extensions import db
+        self._user.ml_access_token = encrypt_token(self.access_token)
+        self._user.ml_refresh_token = encrypt_token(self.refresh_token_val)
+        expires_in = getattr(self, 'expires_in', 21600)
+        self._user.ml_token_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+        db.session.commit()
+
+    def refresh_token(self):
+        result = super().refresh_token()
+        if result.get('success'):
+            self._persist_tokens()
+        return result
+
+    def _reload_token(self):
+        """Sobreescribe el reload desde .env — en DB los tokens ya están cargados."""
+        pass
+
+
 def _meli_for_user():
-    """Devuelve un MeliClient inicializado con los tokens del usuario actual."""
-    meli = MeliClient()
+    """Devuelve un MeliClientDB con los tokens cifrados del usuario actual."""
     if current_user.is_authenticated and current_user.ml_access_token:
-        meli.access_token = current_user.ml_access_token
-        meli.refresh_token_val = current_user.ml_refresh_token or ''
-    return meli
+        return MeliClientDB(current_user._get_current_object())
+    return MeliClient()  # sin token (editor muestra banner de conexión)
 
 
 @editor_bp.route('/')

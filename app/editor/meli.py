@@ -758,7 +758,7 @@ class MeliClient:
     # ─────────────────────────────────────────────────────────────
     def refresh_token(self):
         if not self.refresh_token_val:
-            return {'success': False, 'error': 'No hay refresh token en el .env'}
+            return {'success': False, 'error': 'No hay refresh token disponible.'}
         r = requests.post(self.TOKEN_URL, data={
             'grant_type': 'refresh_token',
             'client_id': self.client_id,
@@ -769,9 +769,9 @@ class MeliClient:
             data = r.json()
             self.access_token = data.get('access_token', '')
             self.refresh_token_val = data.get('refresh_token', '')
-            set_key(ENV_PATH, 'ML_ACCESS_TOKEN', self.access_token)
-            set_key(ENV_PATH, 'ML_REFRESH_TOKEN', self.refresh_token_val)
-            return {'success': True, 'message': 'Token refrescado y guardado'}
+            self.expires_in = data.get('expires_in', 21600)
+            # La persistencia la maneja el llamador (MeliClientDB.refresh_token)
+            return {'success': True, 'message': 'Token refrescado'}
         return {'success': False, 'error': f'Error {r.status_code}: {r.text}'}
 
     def exchange_code(self, code, redirect_uri=None):

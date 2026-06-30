@@ -4,6 +4,15 @@ from flask.cli import with_appcontext
 from app.extensions import db
 
 
+@click.command('generate-fernet-key')
+def generate_fernet_key_command():
+    """Genera una clave Fernet nueva para FERNET_KEY en .env."""
+    from app.utils.crypto import generate_fernet_key
+    key = generate_fernet_key()
+    click.echo(f"FERNET_KEY={key}")
+    click.echo("\nCopia esta línea en tu archivo .env (en producción usa las vars de entorno de Render).")
+
+
 @click.command('seed-db')
 @with_appcontext
 def seed_db_command():
