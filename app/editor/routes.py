@@ -6,6 +6,7 @@ from app.editor import editor_bp
 from app.editor.meli import MeliClient, BROWSER_HEADERS
 from app.editor.claude_helper import ClaudeHelper
 from app.utils.crypto import encrypt_token, decrypt_token
+from app.extensions import limiter
 
 claude = ClaudeHelper()
 
@@ -56,6 +57,7 @@ def index():
 
 @editor_bp.route('/extract', methods=['POST'])
 @login_required
+@limiter.limit("30 per minute")
 def extract():
     data = request.json
     input_value = data.get('input', '').strip()
@@ -68,6 +70,7 @@ def extract():
 
 @editor_bp.route('/enhance', methods=['POST'])
 @login_required
+@limiter.limit("20 per minute")
 def enhance():
     data = request.json
     result = claude.enhance(
@@ -81,6 +84,7 @@ def enhance():
 
 @editor_bp.route('/publish', methods=['POST'])
 @login_required
+@limiter.limit("10 per minute")
 def publish():
     from app.models import Publication
     from app.extensions import db
