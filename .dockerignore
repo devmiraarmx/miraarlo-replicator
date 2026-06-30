@@ -1,0 +1,11 @@
+.env
+.env.*
+instance/
+*.db
+*.pyc
+__pycache__/
+.pytest_cache/
+.git/
+.gitignore
+README.md
+PUBLICADOR_ZAP_PRODUCTION_SPEC.md

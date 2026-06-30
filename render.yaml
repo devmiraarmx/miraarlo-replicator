@@ -1,0 +1,52 @@
+services:
+  - type: web
+    name: publicador-zap
+    runtime: docker
+    repo: https://github.com/devmiraarmx/miraarlo-replicator
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /auth/login
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: publicador-zap-db
+          property: connectionString
+
+      - key: FLASK_ENV
+        value: production
+
+      - key: SECRET_KEY
+        generateValue: true
+
+      # ── Cifrado de tokens ML en DB ──────────────────────────
+      # Genera con: flask generate-fernet-key
+      - key: FERNET_KEY
+        sync: false
+
+      # ── Mercado Libre OAuth ─────────────────────────────────
+      - key: ML_CLIENT_ID
+        sync: false
+      - key: ML_CLIENT_SECRET
+        sync: false
+
+      # ── Anthropic (IA) ──────────────────────────────────────
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+      # ── Mercado Pago (pagos) ────────────────────────────────
+      - key: MP_ACCESS_TOKEN
+        sync: false
+      - key: MP_PUBLIC_KEY
+        sync: false
+
+      # ── Admin por defecto ───────────────────────────────────
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
+databases:
+  - name: publicador-zap-db
+    plan: starter
+    databaseName: publicador_zap
+    user: publicador_zap
