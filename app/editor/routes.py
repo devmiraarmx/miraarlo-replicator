@@ -1,3 +1,4 @@
+import logging
 import requests as req_lib
 from datetime import datetime, timedelta
 from flask import render_template, request, jsonify, send_file
@@ -7,6 +8,8 @@ from app.editor.meli import MeliClient, BROWSER_HEADERS
 from app.editor.claude_helper import ClaudeHelper
 from app.utils.crypto import encrypt_token, decrypt_token
 from app.extensions import limiter
+
+logger = logging.getLogger(__name__)
 
 claude = ClaudeHelper()
 
@@ -107,18 +110,26 @@ def publish():
     result = meli.publish_item(data)
 
     if result.get('success'):
-        pub = Publication(
-            user_id=current_user.id,
-            source_mlm=data.get('mlm_id', ''),
-            new_mlm=result.get('new_id', ''),
-            title=(data.get('title', ''))[:100],
-            category_id=data.get('category_id', ''),
-            price=data.get('price'),
-            status='published',
-            credits_used=1,
-        )
-        db.session.add(pub)
-        db.session.commit()
+        try:
+            pub = Publication(
+                user_id=current_user.id,
+                source_mlm=data.get('mlm_id') or '',
+                new_mlm=result.get('new_id') or '',
+                title=(data.get('title') or '')[:100],
+                category_id=data.get('category_id') or '',
+                price=data.get('price'),
+                status='published',
+                credits_used=1,
+            )
+            db.session.add(pub)
+            db.session.commit()
+            logger.info("Publication saved: user=%s new_mlm=%s", current_user.id, pub.new_mlm)
+        except Exception as exc:
+            db.session.rollback()
+            logger.exception("Failed to save Publication after successful publish: %s", exc)
+            # La publicación ocurrió en ML pero no pudimos registrarla — devolver igual
+            # el éxito al usuario pero con advertencia para que no pierda el ID
+            result['warning'] = 'Publicado en ML pero no se pudo registrar internamente. Anota el ID: ' + (result.get('new_id') or '')
 
     return jsonify(result)
 

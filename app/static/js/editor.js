@@ -423,6 +423,8 @@ async function publishItem() {
     const link = document.getElementById('resultLink');
     link.href = data.url; link.classList.add('visible');
     toast('¡Publicado! ' + data.new_id, 'success');
+    if (data.warning) toast(data.warning, 'error');
+    loadCredits(); // refrescar contador de créditos
   } catch(e) { toast('Error de conexión', 'error'); }
   finally {
     btn.disabled = false;
