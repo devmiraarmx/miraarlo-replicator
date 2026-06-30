@@ -394,6 +394,7 @@
 
 <script>
   window.ML_CONNECT_URL = '{{ url_for("auth.ml_connect") }}';
+  window.CSRF_TOKEN = '{{ csrf_token() }}';
 </script>
 <script src="{{ url_for('static', filename='js/editor.js') }}"></script>
 </body>
