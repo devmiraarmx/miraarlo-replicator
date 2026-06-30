@@ -6,6 +6,12 @@ services:
     branch: main
     dockerfilePath: ./Dockerfile
     healthCheckPath: /auth/login
+
+    # Corre migraciones + seed ANTES de que el nuevo contenedor reciba tráfico
+    preDeployCommand: >-
+      flask db upgrade &&
+      flask seed-db
+
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -15,11 +21,14 @@ services:
       - key: FLASK_ENV
         value: production
 
+      - key: FLASK_APP
+        value: run.py
+
       - key: SECRET_KEY
         generateValue: true
 
       # ── Cifrado de tokens ML en DB ──────────────────────────
-      # Genera con: flask generate-fernet-key
+      # Genera con: flask generate-fernet-key  (una sola vez, guarda el valor)
       - key: FERNET_KEY
         sync: false
 
