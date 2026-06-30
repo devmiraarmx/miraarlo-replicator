@@ -1,2 +1,8 @@
 .env
 __pycache__/
+*.pyc
+instance/
+*.db
+migrations/__pycache__/
+app/__pycache__/
+.pytest_cache/
