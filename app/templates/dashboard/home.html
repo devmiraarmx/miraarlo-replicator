@@ -1,5 +1,303 @@
-{% extends 'base.html' %}
-{% block title %}Dashboard — Publicador Zap{% endblock %}
-{% block content %}
-<p>Dashboard — próximamente (Fase 3)</p>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi cuenta — Publicador Zap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <style>
+    body { background: var(--bg-light); }
+
+    /* ── Header ── */
+    .dash-header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: var(--bg-deep);
+      border-bottom: 1px solid rgba(139,92,246,.15);
+      height: 56px; display: flex; align-items: center;
+      justify-content: space-between; padding: 0 16px;
+    }
+    .dash-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .dash-logo-mark {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--gold), #e89500);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    }
+    .dash-logo-mark i { color: var(--bg-deep); width: 18px; height: 18px; }
+    .dash-logo-text {
+      font-size: 17px; font-weight: 700;
+      background: linear-gradient(135deg, var(--gold) 0%, #ffd580 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .dash-nav { display: flex; align-items: center; gap: 6px; }
+    .nav-link {
+      padding: 7px 12px; border-radius: var(--r-xs);
+      font-size: 13px; font-weight: 500; color: var(--text-light);
+      text-decoration: none; transition: all .15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .nav-link:hover { background: rgba(139,92,246,.15); color: #fff; }
+    .nav-link i { width: 14px; height: 14px; }
+    .nav-link.active { background: rgba(139,92,246,.2); color: #fff; }
+
+    /* ── Page ── */
+    .dash-page { padding: 80px 16px 60px; max-width: 900px; margin: 0 auto; }
+
+    .page-title {
+      font-size: 22px; font-weight: 800; color: var(--text);
+      margin-bottom: 4px; letter-spacing: -0.3px;
+    }
+    .page-sub { font-size: 14px; color: var(--text-2); margin-bottom: 28px; }
+
+    /* ── Stats row ── */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px; margin-bottom: 32px;
+    }
+    .stat-card {
+      background: #fff; border: 1px solid var(--border);
+      border-radius: var(--r); padding: 18px 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--text-3); margin-bottom: 6px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .stat-label i { width: 13px; height: 13px; }
+    .stat-value {
+      font-size: 30px; font-weight: 800; color: var(--text);
+      letter-spacing: -0.5px; line-height: 1;
+    }
+    .stat-value.gold { color: var(--gold); }
+    .stat-value.green { color: var(--green); }
+    .stat-value.purple { color: var(--purple); }
+
+    /* ── Section ── */
+    .section { margin-bottom: 32px; }
+    .section-title {
+      font-size: 14px; font-weight: 700; color: var(--text);
+      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .section-title i { width: 16px; height: 16px; color: var(--purple); }
+
+    /* ── Table ── */
+    .data-table {
+      width: 100%; background: #fff;
+      border: 1px solid var(--border); border-radius: var(--r);
+      overflow: hidden; box-shadow: var(--shadow-sm);
+      border-collapse: collapse;
+    }
+    .data-table th {
+      background: var(--surface); padding: 10px 14px;
+      font-size: 11px; font-weight: 700; letter-spacing: .05em;
+      text-transform: uppercase; color: var(--text-2);
+      text-align: left; border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 11px 14px; font-size: 13px; color: var(--text);
+      border-bottom: 1px solid var(--surface-2);
+      vertical-align: middle;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--surface); }
+    .data-table .mono { font-family: var(--mono); font-size: 12px; }
+    .data-table .muted { color: var(--text-3); }
+
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 10px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+    }
+    .status-pill.published { background: rgba(16,185,129,.1); color: var(--green); }
+    .status-pill.draft     { background: rgba(155,141,176,.1); color: var(--text-3); }
+    .status-pill.failed    { background: rgba(239,68,68,.1);   color: var(--red); }
+    .status-pill.approved  { background: rgba(16,185,129,.1);  color: var(--green); }
+    .status-pill.pending   { background: rgba(245,183,49,.1);  color: var(--gold); }
+    .status-pill.trial     { background: rgba(139,92,246,.1);  color: var(--purple); }
+    .status-pill.rejected  { background: rgba(239,68,68,.1);   color: var(--red); }
+
+    .ext-link {
+      color: var(--purple); text-decoration: none; font-size: 12px;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .ext-link:hover { text-decoration: underline; }
+    .ext-link i { width: 11px; height: 11px; }
+
+    .empty-row td {
+      text-align: center; padding: 32px; color: var(--text-3);
+      font-size: 13px;
+    }
+
+    .cta-banner {
+      background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-dark-2) 100%);
+      border: 1px solid rgba(245,183,49,.2);
+      border-radius: var(--r); padding: 20px 24px;
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 32px;
+    }
+    .cta-banner i { width: 28px; height: 28px; color: var(--gold); flex-shrink: 0; }
+    .cta-banner-text { flex: 1; }
+    .cta-banner-text strong { color: #fff; font-size: 14px; display: block; margin-bottom: 2px; }
+    .cta-banner-text span { color: var(--text-light); font-size: 13px; }
+    .cta-btn {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-hover) 100%);
+      color: var(--bg-deep); font-weight: 700; font-size: 13px;
+      border: none; border-radius: var(--r-sm); cursor: pointer;
+      text-decoration: none; white-space: nowrap;
+      transition: all .2s; box-shadow: var(--shadow-gold);
+    }
+    .cta-btn:hover { transform: translateY(-1px); }
+
+    @media (max-width: 640px) {
+      .data-table .hide-sm { display: none; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="dash-header">
+  <a class="dash-logo" href="{{ url_for('editor.index') }}">
+    <div class="dash-logo-mark"><i data-lucide="zap"></i></div>
+    <span class="dash-logo-text">Publicador Zap</span>
+  </a>
+  <nav class="dash-nav">
+    <a href="{{ url_for('editor.index') }}" class="nav-link"><i data-lucide="zap"></i> Editor</a>
+    <a href="{{ url_for('billing.plans') }}" class="nav-link"><i data-lucide="credit-card"></i> Planes</a>
+    <a href="{{ url_for('auth.logout') }}" class="nav-link" style="color:#f87171;"><i data-lucide="log-out"></i></a>
+  </nav>
+</header>
+
+<div class="dash-page">
+
+  <div class="page-title">Mi cuenta</div>
+  <p class="page-sub">{{ current_user.email }}{% if current_user.nickname %} · {{ current_user.nickname }}{% endif %}</p>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label"><i data-lucide="zap"></i> Créditos</div>
+      <div class="stat-value gold">{{ available }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i data-lucide="check-circle-2"></i> Publicados</div>
+      <div class="stat-value green">{{ total_published }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i data-lucide="trending-up"></i> Usados</div>
+      <div class="stat-value purple">{{ credits_used }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label"><i data-lucide="shopping-bag"></i> Comprados</div>
+      <div class="stat-value">{{ credits_bought }}</div>
+    </div>
+  </div>
+
+  <!-- CTA si saldo bajo -->
+  {% if available < 3 %}
+  <div class="cta-banner">
+    <i data-lucide="zap"></i>
+    <div class="cta-banner-text">
+      <strong>{% if available == 0 %}Sin créditos disponibles{% else %}Saldo bajo ({{ available }} crédito{% if available != 1 %}s{% endif %}){% endif %}</strong>
+      <span>Compra un paquete para seguir publicando en Mercado Libre.</span>
+    </div>
+    <a href="{{ url_for('billing.plans') }}" class="cta-btn">Ver planes</a>
+  </div>
+  {% endif %}
+
+  <!-- Publicaciones -->
+  <div class="section">
+    <div class="section-title"><i data-lucide="package"></i> Mis publicaciones</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Título</th>
+          <th class="hide-sm">Original</th>
+          <th class="hide-sm">Nuevo MLM</th>
+          <th>Estado</th>
+          <th class="hide-sm">Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if publications %}
+          {% for p in publications %}
+          <tr>
+            <td>
+              <div style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                {{ p.title or '—' }}
+              </div>
+              {% if p.price %}<div class="muted mono">${{ "{:,.0f}".format(p.price) }} MXN</div>{% endif %}
+            </td>
+            <td class="hide-sm mono">{{ p.source_mlm or '—' }}</td>
+            <td class="hide-sm">
+              {% if p.new_mlm %}
+                <a class="ext-link" href="https://www.mercadolibre.com.mx/p/{{ p.new_mlm }}" target="_blank">
+                  {{ p.new_mlm }}<i data-lucide="external-link"></i>
+                </a>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              <span class="status-pill {{ p.status }}">{{ p.status }}</span>
+            </td>
+            <td class="hide-sm mono muted">
+              {{ p.created_at.strftime('%d/%m/%y %H:%M') if p.created_at else '—' }}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr class="empty-row"><td colspan="5">Aún no has publicado nada. ¡Ve al editor y publica tu primer producto!</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Transacciones -->
+  <div class="section">
+    <div class="section-title"><i data-lucide="receipt"></i> Historial de créditos</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Créditos</th>
+          <th>Monto</th>
+          <th>Estado</th>
+          <th class="hide-sm">Fecha</th>
+          <th class="hide-sm">Expira</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if transactions %}
+          {% for t in transactions %}
+          <tr>
+            <td><strong>+{{ t.credits }}</strong></td>
+            <td class="mono">
+              {% if t.amount_mxn and t.amount_mxn > 0 %}
+                ${{ "{:,.0f}".format(t.amount_mxn) }} MXN
+              {% else %}
+                <span class="muted">Gratis</span>
+              {% endif %}
+            </td>
+            <td><span class="status-pill {{ t.mp_status or 'pending' }}">{{ t.mp_status or 'pending' }}</span></td>
+            <td class="hide-sm mono muted">
+              {{ t.created_at.strftime('%d/%m/%y %H:%M') if t.created_at else '—' }}
+            </td>
+            <td class="hide-sm mono muted">
+              {{ t.expires_at.strftime('%d/%m/%y') if t.expires_at else 'Sin expiración' }}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr class="empty-row"><td colspan="5">Sin transacciones.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

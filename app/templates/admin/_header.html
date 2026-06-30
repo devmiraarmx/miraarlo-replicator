@@ -1,0 +1,13 @@
+<header class="admin-header">
+  <a class="admin-logo" href="{{ url_for('admin.panel') }}">
+    <div class="admin-logo-mark"><i data-lucide="zap"></i></div>
+    <span class="admin-logo-text">Publicador Zap</span>
+    <span class="admin-badge">Admin</span>
+  </a>
+  <nav class="admin-nav">
+    <a href="{{ url_for('admin.panel') }}" class="admin-nav-link"><i data-lucide="layout-dashboard"></i> Panel</a>
+    <a href="{{ url_for('admin.users') }}" class="admin-nav-link"><i data-lucide="users"></i> Usuarios</a>
+    <a href="{{ url_for('editor.index') }}" class="admin-nav-link"><i data-lucide="zap"></i> Editor</a>
+    <a href="{{ url_for('auth.logout') }}" class="admin-nav-link" style="color:#f87171;"><i data-lucide="log-out"></i></a>
+  </nav>
+</header>

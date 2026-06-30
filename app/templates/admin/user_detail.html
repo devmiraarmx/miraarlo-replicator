@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ user.email }} — Admin Publicador Zap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+
+{% include 'admin/_header.html' %}
+
+<div class="admin-page">
+  <div style="margin-bottom:16px;">
+    <a href="{{ url_for('admin.users') }}" class="admin-link"><i data-lucide="arrow-left"></i> Volver a usuarios</a>
+  </div>
+
+  <div class="admin-page-title">{{ user.email }}</div>
+  <p class="admin-page-sub">
+    ID #{{ user.id }}
+    {% if user.nickname %} · {{ user.nickname }}{% endif %}
+    · <span class="status-pill {{ 'active' if user.is_active else 'inactive' }}">{{ 'Activo' if user.is_active else 'Inactivo' }}</span>
+    {% if user.is_admin %} · <span class="status-pill trial">Admin</span>{% endif %}
+  </p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flash-list">
+        {% for category, message in messages %}
+          <li class="flash-item {{ category }}"><i data-lucide="info"></i> {{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <div class="detail-grid">
+
+    <!-- Info del usuario -->
+    <div class="admin-card">
+      <div class="admin-card-title"><i data-lucide="user"></i> Información</div>
+      <ul class="info-list">
+        <li class="info-row">
+          <span class="info-key">Email</span>
+          <span class="info-val">{{ user.email }}</span>
+        </li>
+        <li class="info-row">
+          <span class="info-key">Nickname</span>
+          <span class="info-val">{{ user.nickname or '—' }}</span>
+        </li>
+        <li class="info-row">
+          <span class="info-key">Créditos disponibles</span>
+          <span class="info-val" style="color:var(--gold);font-size:18px;font-weight:800;">{{ available }}</span>
+        </li>
+        <li class="info-row">
+          <span class="info-key">Registro</span>
+          <span class="info-val">{{ user.created_at.strftime('%d/%m/%Y %H:%M') if user.created_at else '—' }}</span>
+        </li>
+        <li class="info-row">
+          <span class="info-key">ML conectado</span>
+          <span class="info-val">{{ 'Sí' if user.ml_access_token else 'No' }}</span>
+        </li>
+      </ul>
+      <!-- Acciones -->
+      <div class="grant-form" style="justify-content:flex-end;">
+        <form method="post" action="{{ url_for('admin.toggle_user', user_id=user.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn-sm {{ 'red' if user.is_active else 'green' }}">
+            <i data-lucide="{{ 'user-x' if user.is_active else 'user-check' }}"></i>
+            {{ 'Desactivar' if user.is_active else 'Activar' }}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Otorgar créditos -->
+    <div class="admin-card">
+      <div class="admin-card-title"><i data-lucide="zap"></i> Otorgar créditos de cortesía</div>
+      <div style="padding:16px;">
+        <p style="font-size:13px;color:var(--text-2);margin-bottom:14px;">
+          Los créditos se añaden inmediatamente al balance del usuario sin cargo.
+        </p>
+        <form method="post" action="{{ url_for('admin.grant_credits', user_id=user.id) }}" style="display:flex;gap:10px;align-items:center;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input class="grant-input" type="number" name="credits" min="1" max="10000" placeholder="Cantidad" required>
+          <button type="submit" class="btn-sm gold"><i data-lucide="plus-circle"></i> Otorgar</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Publicaciones -->
+  <div class="admin-card" style="margin-bottom:20px;">
+    <div class="admin-card-title"><i data-lucide="package"></i> Publicaciones (últimas {{ publications|length }})</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Título</th>
+          <th>MLM origen</th>
+          <th>MLM nuevo</th>
+          <th>Estado</th>
+          <th>Créditos</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in publications %}
+        <tr>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.title or '—' }}</td>
+          <td class="mono muted">{{ p.source_mlm or '—' }}</td>
+          <td class="mono">{{ p.new_mlm or '—' }}</td>
+          <td><span class="status-pill {{ p.status }}">{{ p.status }}</span></td>
+          <td class="mono">{{ p.credits_used }}</td>
+          <td class="mono muted">{{ p.created_at.strftime('%d/%m/%y %H:%M') if p.created_at else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="empty-cell">Sin publicaciones.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Transacciones -->
+  <div class="admin-card">
+    <div class="admin-card-title"><i data-lucide="receipt"></i> Transacciones (últimas {{ transactions|length }})</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Créditos</th>
+          <th>Monto</th>
+          <th>Estado</th>
+          <th>MP Payment ID</th>
+          <th>Fecha</th>
+          <th>Expira</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in transactions %}
+        <tr>
+          <td><strong>+{{ t.credits }}</strong></td>
+          <td class="mono">
+            {% if t.amount_mxn and t.amount_mxn > 0 %}${{ "{:,.0f}".format(t.amount_mxn) }}{% else %}<span class="muted">Gratis</span>{% endif %}
+          </td>
+          <td><span class="status-pill {{ t.mp_status }}">{{ t.mp_status }}</span></td>
+          <td class="mono muted">{{ t.mp_payment_id or '—' }}</td>
+          <td class="mono muted">{{ t.created_at.strftime('%d/%m/%y %H:%M') if t.created_at else '—' }}</td>
+          <td class="mono muted">{{ t.expires_at.strftime('%d/%m/%y') if t.expires_at else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="empty-cell">Sin transacciones.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

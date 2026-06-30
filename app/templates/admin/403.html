@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>403 Prohibido — Publicador Zap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <style>
+    body { background: var(--bg-light); display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .error-card {
+      background: #fff; border: 1px solid var(--border); border-radius: var(--r);
+      padding: 48px 40px; text-align: center; max-width: 400px; width: 100%;
+      box-shadow: var(--shadow-sm);
+    }
+    .error-icon { color: var(--red); margin-bottom: 16px; }
+    .error-icon i { width: 48px; height: 48px; }
+    .error-code { font-size: 48px; font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 8px; }
+    .error-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+    .error-sub { font-size: 14px; color: var(--text-2); margin-bottom: 28px; }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; background: var(--purple); color: #fff;
+      border-radius: var(--r-sm); font-size: 14px; font-weight: 600;
+      text-decoration: none; transition: opacity .15s;
+    }
+    .back-btn:hover { opacity: .85; }
+    .back-btn i { width: 16px; height: 16px; }
+  </style>
+</head>
+<body>
+  <div class="error-card">
+    <div class="error-icon"><i data-lucide="shield-off"></i></div>
+    <div class="error-code">403</div>
+    <div class="error-title">Acceso denegado</div>
+    <p class="error-sub">No tienes permisos para acceder a esta sección.</p>
+    <a href="{{ url_for('editor.index') }}" class="back-btn"><i data-lucide="arrow-left"></i> Volver al editor</a>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>
