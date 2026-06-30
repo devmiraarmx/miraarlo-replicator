@@ -302,5 +302,10 @@
 </div>
 
 <script>lucide.createIcons();</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+  }
+</script>
 </body>
 </html>

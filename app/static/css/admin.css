@@ -79,9 +79,16 @@ body { background: var(--bg-light); }
 
 .admin-card {
   background: #fff; border: 1px solid var(--border);
-  border-radius: var(--r); overflow: hidden;
+  border-radius: var(--r); overflow: visible;
   box-shadow: var(--shadow-sm);
 }
+.admin-card-title { border-radius: var(--r) var(--r) 0 0; }
+.admin-card .data-table-wrap {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border-radius: 0 0 var(--r) var(--r);
+}
+.admin-card .data-table-wrap .data-table { min-width: 480px; }
+.admin-card > .data-table { overflow-x: auto; display: block; border-radius: 0 0 var(--r) var(--r); }
 .admin-card-title {
   display: flex; align-items: center; gap: 8px;
   font-size: 13px; font-weight: 700; color: var(--text);
