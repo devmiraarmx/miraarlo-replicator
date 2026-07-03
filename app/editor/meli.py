@@ -965,6 +965,21 @@ class MeliClient:
 
         try:
             me_req = requests.get(f"{self.BASE_URL}/users/me", headers=headers)
+
+            # --- LÓGICA DE AUTO-REFRESH (igual que extract_item) ---
+            # Los access tokens de ML expiran a las 6h. Si el token venció,
+            # lo refrescamos y reintentamos una vez antes de rendirnos.
+            if me_req.status_code in (401, 403):
+                print("[PUBLISH] Token expirado o denegado (401/403). Intentando refresh_token...")
+                refresh_result = self.refresh_token()
+                if refresh_result.get('success'):
+                    print("[PUBLISH] Token refrescado. Reintentando /users/me...")
+                    headers['Authorization'] = f'Bearer {self.access_token}'
+                    me_req = requests.get(f"{self.BASE_URL}/users/me", headers=headers)
+                else:
+                    print(f"[PUBLISH] Error al refrescar el token: {refresh_result.get('error')}")
+            # -------------------------------------------------------
+
             if me_req.status_code == 200:
                 seller_id = me_req.json().get('id')
                 tags_cuenta = me_req.json().get('tags', [])

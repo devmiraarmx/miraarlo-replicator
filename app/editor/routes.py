@@ -43,9 +43,18 @@ class MeliClientDB(MeliClient):
 
 
 def _meli_for_user():
-    """Devuelve un MeliClientDB con los tokens cifrados del usuario actual."""
+    """Devuelve un MeliClientDB con los tokens cifrados del usuario actual.
+
+    Refresca el access token de forma proactiva si ya venció (o está por vencer),
+    para que publicar/extraer no falle con tokens expirados de 6h.
+    """
     if current_user.is_authenticated and current_user.ml_access_token:
-        return MeliClientDB(current_user._get_current_object())
+        user = current_user._get_current_object()
+        client = MeliClientDB(user)
+        exp = user.ml_token_expires_at
+        if client.refresh_token_val and (exp is None or exp <= datetime.utcnow() + timedelta(minutes=5)):
+            client.refresh_token()  # persiste el nuevo token en la DB si tiene éxito
+        return client
     return MeliClient()  # sin token (editor muestra banner de conexión)
 
 
