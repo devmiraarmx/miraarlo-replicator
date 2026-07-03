@@ -9,9 +9,12 @@ El canvas se EXPANDE respecto a la imagen original (nunca la recorta) para dejar
 espacio a las flechas y el texto. Fondo blanco por defecto.
 """
 
+import logging
 from io import BytesIO
 
 from PIL import Image, ImageDraw, ImageFont
+
+log = logging.getLogger(__name__)
 
 # ── Estilo ────────────────────────────────────────────────────────────────
 TEXT_COLOR = (232, 147, 90)   # #E8935A naranja/coral
@@ -92,54 +95,95 @@ def generate_measurement_stamp(image, measurements, bg_color=BG_WHITE):
 
     w, h = src.size
 
-    # Métricas proporcionales al tamaño de la imagen.
-    base_fs = max(28, int(min(w, h) * 0.06))
-    label_fs = max(20, int(base_fs * 0.78))
-    value_font = _load_font(base_fs)
-    label_font = _load_font(label_fs)
-
-    gap = max(8, base_fs // 4)
-    small_gap = max(4, base_fs // 8)
-    head_len = base_fs
-    head_w = max(14, int(base_fs * 0.7))
-    line_w = max(3, base_fs // 9)
-
     # Normaliza valores (mayúsculas, sin espacios sobrantes).
     vals = {}
     for key, _label in _FIELDS:
         raw = (measurements or {}).get(key, "")
         vals[key] = str(raw).strip().upper() if raw else ""
 
-    # Alto del bloque de texto (label + valor), igual para todos.
-    _, label_h = _text_size(label_font, "AÁ")
-    _, value_h = _text_size(value_font, "0CM")
-    text_block_h = label_h + small_gap + value_h
+    def _compute_metrics(ref_w):
+        """Calcula fuentes, flechas y márgenes escalados a un ancho de referencia.
 
-    min_pad = gap * 2
+        El tamaño de fuente y el grosor de las flechas escalan con el ANCHO DEL
+        CANVAS final (no con la imagen original). Como el canvas depende de los
+        márgenes y estos del tamaño de texto, se itera: primero con el ancho de la
+        imagen y luego con el ancho de canvas resultante.
+        """
+        value_fs = max(26, int(ref_w * 0.030))
+        label_fs = max(22, int(ref_w * 0.024))
+        value_font = _load_font(value_fs)
+        label_font = _load_font(label_fs)
 
-    # ── Márgenes por lado (solo si el campo correspondiente tiene valor) ──
-    margin_top = (gap + head_w + gap + text_block_h + gap) if vals["diametro"] else min_pad
-    margin_bottom = (gap + head_w + gap + text_block_h + gap) if vals["base"] else min_pad
+        gap = max(8, int(ref_w * 0.012))
+        small_gap = max(4, gap // 2)
+        head_w = max(14, int(ref_w * 0.018))
+        head_len = max(18, int(ref_w * 0.024))
+        line_w = max(3, int(ref_w * 0.005))
 
-    if vals["altura"]:
-        lbl_w, _ = _text_size(label_font, "ALTURA")
-        val_w, _ = _text_size(value_font, vals["altura"])
-        alt_text_w = max(lbl_w, val_w)
-        margin_left = gap + alt_text_w + gap + head_w + gap
-    else:
-        margin_left = min_pad
-    margin_right = min_pad + head_w // 2
+        _, label_h = _text_size(label_font, "AÁ")
+        _, value_h = _text_size(value_font, "0CM")
+        text_block_h = label_h + small_gap + value_h
+        min_pad = gap * 2
 
-    # ── Canvas expandido ──
-    canvas_w = w + margin_left + margin_right
-    canvas_h = h + margin_top + margin_bottom
+        # Espacio reservado por lado según la medida presente.
+        reserve_v = gap + head_w + gap + text_block_h + gap
+        reserve_top = reserve_v if vals["diametro"] else min_pad
+        reserve_bottom = reserve_v if vals["base"] else min_pad
+        if vals["altura"]:
+            lbl_w, _ = _text_size(label_font, "ALTURA")
+            val_w, _ = _text_size(value_font, vals["altura"])
+            reserve_left = gap + max(lbl_w, val_w) + gap + head_w + gap
+        else:
+            reserve_left = min_pad
+        reserve_right = min_pad + head_w // 2
+
+        # Márgenes simétricos: la imagen queda centrada horizontal y verticalmente,
+        # y cada lado conserva el espacio necesario para su flecha/texto.
+        margin_h = max(reserve_left, reserve_right)
+        margin_v = max(reserve_top, reserve_bottom)
+        canvas_w = w + 2 * margin_h
+        canvas_h = h + 2 * margin_v
+
+        return {
+            "value_font": value_font, "label_font": label_font,
+            "value_fs": value_fs, "label_fs": label_fs,
+            "gap": gap, "small_gap": small_gap,
+            "head_w": head_w, "head_len": head_len, "line_w": line_w,
+            "label_h": label_h, "value_h": value_h, "text_block_h": text_block_h,
+            "margin_h": margin_h, "margin_v": margin_v,
+            "canvas_w": canvas_w, "canvas_h": canvas_h,
+        }
+
+    # Dos pasadas: estima con el ancho de la imagen, refina con el ancho de canvas.
+    m = _compute_metrics(w)
+    m = _compute_metrics(m["canvas_w"])
+
+    value_font, label_font = m["value_font"], m["label_font"]
+    gap, small_gap = m["gap"], m["small_gap"]
+    head_w, head_len, line_w = m["head_w"], m["head_len"], m["line_w"]
+    label_h, value_h, text_block_h = m["label_h"], m["value_h"], m["text_block_h"]
+    margin_left = margin_right = m["margin_h"]
+    margin_top = margin_bottom = m["margin_v"]
+    canvas_w, canvas_h = m["canvas_w"], m["canvas_h"]
+
+    # ── Canvas expandido; imagen CENTRADA en el área disponible ──
     canvas = Image.new("RGB", (canvas_w, canvas_h), bg_color)
-    canvas.paste(src, (margin_left, margin_top))
+    avail_w = canvas_w - margin_left - margin_right
+    avail_h = canvas_h - margin_top - margin_bottom
+    paste_x = margin_left + (avail_w - w) // 2
+    paste_y = margin_top + (avail_h - h) // 2
+    canvas.paste(src, (paste_x, paste_y))
     draw = ImageDraw.Draw(canvas)
 
+    log.info(
+        "Sello de medidas: original=%dx%d -> canvas=%dx%d, paste=(%d,%d), "
+        "fuente label=%dpx valor=%dpx, linea=%dpx",
+        w, h, canvas_w, canvas_h, paste_x, paste_y, m["label_fs"], m["value_fs"], line_w,
+    )
+
     # Coordenadas de la caja de la imagen dentro del canvas.
-    ix0, iy0 = margin_left, margin_top
-    ix1, iy1 = margin_left + w, margin_top + h
+    ix0, iy0 = paste_x, paste_y
+    ix1, iy1 = paste_x + w, paste_y + h
     cx = (ix0 + ix1) / 2.0
     cy = (iy0 + iy1) / 2.0
 
