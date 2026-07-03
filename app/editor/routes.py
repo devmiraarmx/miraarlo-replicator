@@ -443,3 +443,52 @@ def fill_template():
         as_attachment=True,
         download_name=filename
     )
+
+
+# ── Sello de Medidas ─────────────────────────────────────────────────────────
+
+@editor_bp.route('/measurement-stamp')
+@login_required
+def measurement_stamp():
+    """Muestra el formulario del Sello de Medidas."""
+    return render_template('editor/measurement_stamp.html')
+
+
+@editor_bp.route('/measurement-stamp', methods=['POST'])
+@login_required
+@limiter.limit("20 per minute")
+def measurement_stamp_generate():
+    """Recibe imagen + medidas y devuelve el PNG con las medidas estampadas."""
+    from PIL import Image, UnidentifiedImageError
+    from app.utils.measurement_stamp import generate_measurement_stamp_png
+
+    if 'image' not in request.files or not request.files['image'].filename:
+        return jsonify({'success': False, 'error': 'Debes subir una imagen.'}), 400
+
+    measurements = {
+        'diametro': request.form.get('diametro', '').strip(),
+        'altura': request.form.get('altura', '').strip(),
+        'base': request.form.get('base', '').strip(),
+    }
+    if not any(measurements.values()):
+        return jsonify({'success': False, 'error': 'Ingresa al menos una medida (diámetro, altura o base).'}), 400
+
+    image_file = request.files['image']
+    try:
+        img = Image.open(image_file.stream)
+        img.load()
+    except (UnidentifiedImageError, OSError):
+        return jsonify({'success': False, 'error': 'El archivo no es una imagen válida.'}), 400
+
+    try:
+        buf = generate_measurement_stamp_png(img, measurements)
+    except Exception as e:
+        logger.exception("Error generando el sello de medidas")
+        return jsonify({'success': False, 'error': f'No se pudo generar la imagen: {e}'}), 500
+
+    return send_file(
+        buf,
+        mimetype='image/png',
+        as_attachment=True,
+        download_name='medidas.png',
+    )

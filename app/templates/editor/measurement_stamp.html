@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Sello de Medidas — Publicador Zap{% endblock %}
+
+{% block head %}
+<style>
+  .ms-wrap { max-width: 900px; margin: 0 auto; padding: 24px 16px 64px; }
+  .ms-top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .ms-back { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); text-decoration: none; font-weight: 600; font-size: 13px; }
+  .ms-back:hover { color: var(--text); }
+  .ms-title { font-size: 24px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 10px; }
+  .ms-sub { color: var(--text-2); margin: 4px 0 24px; font-size: 14px; }
+
+  .ms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 760px) { .ms-grid { grid-template-columns: 1fr; } }
+
+  .card { background: #fff; border: 1px solid var(--border); border-radius: var(--r); padding: 20px; box-shadow: var(--shadow); }
+  .card h2 { font-size: 15px; font-weight: 700; margin-bottom: 14px; color: var(--text); }
+
+  .drop { border: 2px dashed var(--border); border-radius: var(--r-sm); padding: 22px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; color: var(--text-2); }
+  .drop:hover, .drop.drag { border-color: var(--gold); background: var(--gold-light); }
+  .drop input { display: none; }
+  .drop-preview { max-width: 100%; max-height: 220px; border-radius: var(--r-xs); margin-top: 12px; }
+
+  .field { margin-top: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
+  .field input[type=text] { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 14px; font-family: var(--font); }
+  .field input[type=text]:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-light); }
+  .field .hint { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 16px; border: none; border-radius: var(--r-sm); background: var(--gold); color: #1e1033; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 18px; transition: background .15s; }
+  .btn:hover { background: var(--gold-hover); }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+  .btn-ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: #e9e2ff; }
+
+  .result-empty { color: var(--text-3); text-align: center; padding: 40px 12px; font-size: 13px; }
+  #resultImg { max-width: 100%; border-radius: var(--r-sm); border: 1px solid var(--border); display: none; }
+  .ms-error { background: var(--red-light); color: #991b1b; border: 1px solid #fca5a5; border-radius: var(--r-sm); padding: 10px 12px; font-size: 13px; margin-top: 12px; display: none; }
+  .spin { animation: sp 1s linear infinite; } @keyframes sp { to { transform: rotate(360deg); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ms-wrap">
+  <div class="ms-top">
+    <a class="ms-back" href="{{ url_for('editor.index') }}"><i data-lucide="arrow-left"></i> Volver al editor</a>
+  </div>
+  <div class="ms-title"><i data-lucide="ruler"></i> Sello de Medidas</div>
+  <p class="ms-sub">Sube una foto del producto, ingresa las medidas y genera una imagen con las medidas estampadas tipo ficha técnica.</p>
+
+  <div class="ms-grid">
+    <!-- Formulario -->
+    <form id="msForm" class="card">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h2>1. Imagen del producto</h2>
+      <label class="drop" id="drop">
+        <input type="file" id="imageInput" name="image" accept="image/*" required>
+        <div id="dropText"><i data-lucide="image-plus"></i><br>Haz clic o arrastra una imagen aquí</div>
+        <img id="dropPreview" class="drop-preview" style="display:none;" alt="preview">
+      </label>
+
+      <h2 style="margin-top:22px;">2. Medidas</h2>
+      <div class="field">
+        <label>Diámetro (arriba)</label>
+        <input type="text" name="diametro" placeholder="ej. 10 CM">
+      </div>
+      <div class="field">
+        <label>Altura (izquierda)</label>
+        <input type="text" name="altura" placeholder="ej. 20 CM">
+      </div>
+      <div class="field">
+        <label>Base (abajo)</label>
+        <input type="text" name="base" placeholder="ej. 8 CM">
+        <div class="hint">Escribe valor y unidad. Deja vacío el que no apliques.</div>
+      </div>
+
+      <button type="submit" class="btn" id="genBtn"><i data-lucide="wand-2"></i> Generar imagen</button>
+      <div class="ms-error" id="msError"></div>
+    </form>
+
+    <!-- Resultado -->
+    <div class="card">
+      <h2>Resultado</h2>
+      <div class="result-empty" id="resultEmpty">La imagen con medidas aparecerá aquí.</div>
+      <img id="resultImg" alt="Imagen con medidas">
+      <a id="downloadBtn" class="btn" style="display:none;" download="medidas.png">
+        <i data-lucide="download"></i> Descargar imagen con medidas
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('msForm');
+  const imageInput = document.getElementById('imageInput');
+  const drop = document.getElementById('drop');
+  const dropText = document.getElementById('dropText');
+  const dropPreview = document.getElementById('dropPreview');
+  const genBtn = document.getElementById('genBtn');
+  const msError = document.getElementById('msError');
+  const resultImg = document.getElementById('resultImg');
+  const resultEmpty = document.getElementById('resultEmpty');
+  const downloadBtn = document.getElementById('downloadBtn');
+  let lastUrl = null;
+
+  function showFilePreview(file) {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    dropPreview.src = url;
+    dropPreview.style.display = 'block';
+    dropText.style.display = 'none';
+  }
+
+  imageInput.addEventListener('change', () => showFilePreview(imageInput.files[0]));
+
+  // Drag & drop
+  ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('drag'); }));
+  drop.addEventListener('drop', e => {
+    const f = e.dataTransfer.files[0];
+    if (f) { imageInput.files = e.dataTransfer.files; showFilePreview(f); }
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msError.style.display = 'none';
+    genBtn.disabled = true;
+    genBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Generando...';
+    if (window.lucide) lucide.createIcons();
+
+    try {
+      const resp = await fetch('{{ url_for("editor.measurement_stamp_generate") }}', {
+        method: 'POST',
+        body: new FormData(form),
+      });
+
+      const ctype = resp.headers.get('Content-Type') || '';
+      if (!resp.ok || ctype.includes('application/json')) {
+        const data = await resp.json().catch(() => ({ error: 'Error inesperado.' }));
+        throw new Error(data.error || 'No se pudo generar la imagen.');
+      }
+
+      const blob = await resp.blob();
+      if (lastUrl) URL.revokeObjectURL(lastUrl);
+      lastUrl = URL.createObjectURL(blob);
+      resultImg.src = lastUrl;
+      resultImg.style.display = 'block';
+      resultEmpty.style.display = 'none';
+      downloadBtn.href = lastUrl;
+      downloadBtn.style.display = 'flex';
+    } catch (err) {
+      msError.textContent = err.message;
+      msError.style.display = 'block';
+    } finally {
+      genBtn.disabled = false;
+      genBtn.innerHTML = '<i data-lucide="wand-2"></i> Generar imagen';
+      if (window.lucide) lucide.createIcons();
+    }
+  });
+
+  if (window.lucide) lucide.createIcons();
+</script>
+{% endblock %}
