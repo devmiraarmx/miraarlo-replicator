@@ -94,7 +94,7 @@ def ml_connect():
 
     proto = request.headers.get('X-Forwarded-Proto', 'http')
     host = request.headers.get('X-Forwarded-Host', request.host)
-    callback_url = f"{proto}://{host}/auth/ml/callback"
+    callback_url = f"{proto}://{host}/auth/callback"
     session['ml_callback_url'] = callback_url
 
     # State anti-CSRF: token aleatorio que debe volver idéntico en el callback.
@@ -103,7 +103,7 @@ def ml_connect():
     return redirect(meli.get_auth_url(callback_url, state=state))
 
 
-@auth_bp.route('/ml/callback')
+@auth_bp.route('/callback')
 @login_required
 def ml_callback():
     """Recibe el código OAuth de ML, obtiene tokens y los guarda en el usuario actual."""
@@ -141,7 +141,7 @@ def ml_callback():
         return redirect(url_for('editor.index'))
 
     callback_url = session.get('ml_callback_url',
-                               request.host_url.rstrip('/') + '/auth/ml/callback')
+                               request.host_url.rstrip('/') + '/auth/callback')
     meli = MeliClient()
 
     # Intercambio de código por tokens
