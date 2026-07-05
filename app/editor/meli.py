@@ -47,9 +47,15 @@ class MeliClient:
     def has_token(self):
         return bool(self.access_token)
 
-    def get_auth_url(self, redirect_uri=None):
-        return (f"{self.AUTH_URL}?response_type=code"
-                f"&client_id={self.client_id}&redirect_uri={redirect_uri or self.redirect_uri}")
+    def get_auth_url(self, redirect_uri=None, state=None):
+        from urllib.parse import quote
+        url = (f"{self.AUTH_URL}?response_type=code"
+               f"&client_id={self.client_id}"
+               f"&redirect_uri={redirect_uri or self.redirect_uri}"
+               f"&scope={quote('offline_access read write')}")
+        if state:
+            url += f"&state={quote(str(state))}"
+        return url
 
     def _api_headers(self):
         h = dict(API_HEADERS)
