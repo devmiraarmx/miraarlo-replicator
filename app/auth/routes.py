@@ -1,8 +1,12 @@
+import logging
+import secrets
 from datetime import datetime, timedelta
 from flask import redirect, request, session, render_template, flash, url_for
 from flask_login import login_user, logout_user, login_required, current_user
 from app.auth import auth_bp
 from app.extensions import db, bcrypt, limiter
+
+logger = logging.getLogger(__name__)
 
 
 # ── Email + contraseña ──────────────────────────────────────────────────────
@@ -92,7 +96,11 @@ def ml_connect():
     host = request.headers.get('X-Forwarded-Host', request.host)
     callback_url = f"{proto}://{host}/auth/ml/callback"
     session['ml_callback_url'] = callback_url
-    return redirect(meli.get_auth_url(callback_url))
+
+    # State anti-CSRF: token aleatorio que debe volver idéntico en el callback.
+    state = secrets.token_urlsafe(32)
+    session['ml_oauth_state'] = state
+    return redirect(meli.get_auth_url(callback_url, state=state))
 
 
 @auth_bp.route('/ml/callback')
@@ -103,6 +111,31 @@ def ml_callback():
     import requests as req_lib
 
     code = request.args.get('code')
+    error = request.args.get('error')
+    error_description = request.args.get('error_description')
+    state = request.args.get('state')
+
+    # Log de TODOS los parámetros recibidos de ML para diagnóstico.
+    logger.error(
+        "ML OAuth callback params: code=%s error=%s error_description=%s state=%s",
+        code, error, error_description, state,
+    )
+
+    # Si ML devolvió un error explícito, mostrarlo al usuario (no el genérico).
+    if error:
+        detail = f"{error}: {error_description}" if error_description else error
+        flash(f'Mercado Libre rechazó la conexión — {detail}', 'danger')
+        return redirect(url_for('editor.index'))
+
+    # Validar el state anti-CSRF: debe coincidir con el que iniciamos.
+    expected_state = session.pop('ml_oauth_state', None)
+    if not expected_state or state != expected_state:
+        logger.error(
+            "ML OAuth state mismatch: esperado=%s recibido=%s", expected_state, state,
+        )
+        flash('La conexión con Mercado Libre no pudo validarse (state inválido). Intenta de nuevo.', 'danger')
+        return redirect(url_for('editor.index'))
+
     if not code:
         flash('Error al conectar con Mercado Libre.', 'danger')
         return redirect(url_for('editor.index'))
