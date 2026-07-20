@@ -3,7 +3,14 @@ from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 
+# Reexportamos `db` (y demás extensiones) a nivel de paquete para que
+# `from app import db` funcione, además del canónico `from app.extensions import db`.
+# `app.extensions` no importa `app`, así que no hay riesgo de import circular.
+from app.extensions import db, login_manager, csrf, bcrypt, migrate, limiter, talisman
+
 load_dotenv()
+
+__all__ = ['create_app', 'db', 'login_manager', 'csrf', 'bcrypt', 'migrate', 'limiter', 'talisman']
 
 
 def create_app(config_name=None):
