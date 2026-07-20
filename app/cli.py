@@ -13,6 +13,42 @@ def generate_fernet_key_command():
     click.echo("\nCopia esta línea en tu archivo .env (en producción usa las vars de entorno de Render).")
 
 
+@click.command('create-admin')
+@click.option('--email', required=True, help='Email del usuario admin a crear.')
+@click.option('--password', prompt=True, hide_input=True, confirmation_prompt=True,
+              help='Contraseña (si se omite se pide de forma interactiva y oculta).')
+@click.option('--nickname', default='Admin', show_default=True, help='Nombre visible del usuario.')
+@with_appcontext
+def create_admin_command(email, password, nickname):
+    """Crea (o promueve) un usuario admin de prueba con el email/contraseña dados."""
+    from app.models import User
+    from app.extensions import bcrypt
+
+    email = email.strip().lower()
+    pw_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+
+    user = User.query.filter_by(email=email).first()
+    if user:
+        # Ya existe: le fijamos contraseña, lo hacemos admin y lo reactivamos.
+        user.password_hash = pw_hash
+        user.is_admin = True
+        user.is_active = True
+        db.session.commit()
+        click.echo(f"Usuario existente actualizado: {email} (ahora es admin, contraseña restablecida).")
+        return
+
+    user = User(
+        email=email,
+        password_hash=pw_hash,
+        nickname=nickname,
+        is_admin=True,
+        is_active=True,
+    )
+    db.session.add(user)
+    db.session.commit()
+    click.echo(f"Usuario admin creado: {email}")
+
+
 @click.command('seed-db')
 @with_appcontext
 def seed_db_command():

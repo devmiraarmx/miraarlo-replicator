@@ -81,9 +81,10 @@ def _init_extensions(app):
 
 
 def _register_cli(app):
-    from app.cli import seed_db_command, generate_fernet_key_command
+    from app.cli import seed_db_command, generate_fernet_key_command, create_admin_command
     app.cli.add_command(seed_db_command)
     app.cli.add_command(generate_fernet_key_command)
+    app.cli.add_command(create_admin_command)
 
 
 def _register_blueprints(app):
