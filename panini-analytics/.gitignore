@@ -1,0 +1,13 @@
+# Entorno
+.env
+venv/
+__pycache__/
+*.pyc
+
+# Base de datos persistente (no versionar datos reales)
+data/*.db
+data/*.db-journal
+
+# Archivos temporales de carga
+uploads_temp/*
+!uploads_temp/.gitkeep

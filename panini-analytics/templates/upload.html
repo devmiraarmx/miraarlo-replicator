@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panini Analytics — Carga mensual</title>
+  <style>
+    :root { --bg:#0f1115; --card:#1a1d24; --border:#2a2e37; --txt:#e6e8ec; --muted:#9aa0aa; --accent:#c8a04a; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+           background:var(--bg); color:var(--txt); padding:2rem 1rem; }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    h1 { font-size:1.4rem; margin:0 0 .25rem; }
+    .sub { color:var(--muted); margin:0 0 1.5rem; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:12px;
+            padding:1.25rem 1.25rem 1.5rem; margin-bottom:1.25rem; }
+    label { display:block; font-size:.85rem; color:var(--muted); margin-bottom:.5rem; }
+    input[type=file] { width:100%; padding:.6rem; background:#12151b; color:var(--txt);
+                       border:1px dashed var(--border); border-radius:8px; }
+    button { margin-top:1rem; background:var(--accent); color:#1a1206; border:0; font-weight:600;
+             padding:.7rem 1.2rem; border-radius:8px; cursor:pointer; font-size:.95rem; }
+    button:disabled { opacity:.6; cursor:progress; }
+    .stat { font-size:2rem; font-weight:700; }
+    .msg { padding:.75rem 1rem; border-radius:8px; margin-bottom:1rem; font-size:.9rem; }
+    .msg.success { background:#14301d; border:1px solid #1f5c34; color:#8ff0b0; }
+    .msg.error { background:#361717; border:1px solid #6c2b2b; color:#ffb0b0; }
+    table { width:100%; border-collapse:collapse; font-size:.82rem; }
+    th, td { text-align:left; padding:.5rem .4rem; border-bottom:1px solid var(--border); }
+    th { color:var(--muted); font-weight:600; }
+    .num { text-align:right; font-variant-numeric: tabular-nums; }
+    #resultado { margin-top:1rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Panini Analytics ⚡</h1>
+    <p class="sub">Carga mensual de ventas · Fase 1</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="msg {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="card">
+      <div class="stat">{{ "{:,}".format(total_ventas) }}</div>
+      <div class="sub" style="margin:0">registros históricos en la base</div>
+    </div>
+
+    <div class="card">
+      <form id="form" action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+        <label for="archivo">Archivo Excel (.xlsx) con las ventas del mes</label>
+        <input type="file" id="archivo" name="archivo" accept=".xlsx,.xls" required>
+        <button type="submit">Cargar</button>
+      </form>
+      <div id="resultado"></div>
+    </div>
+
+    <div class="card">
+      <label>Historial de cargas</label>
+      {% if historial %}
+      <table>
+        <thead>
+          <tr><th>Archivo</th><th>Mes</th><th class="num">Recibidas</th>
+              <th class="num">Insertadas</th><th class="num">Duplicadas</th><th>Fecha</th></tr>
+        </thead>
+        <tbody>
+          {% for c in historial %}
+          <tr>
+            <td>{{ c.nombre_archivo }}</td>
+            <td>{{ c.mes_carga }}</td>
+            <td class="num">{{ c.filas_recibidas }}</td>
+            <td class="num">{{ c.filas_insertadas }}</td>
+            <td class="num">{{ c.filas_duplicadas }}</td>
+            <td>{{ c.fecha_carga }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="sub" style="margin:0">Aún no hay cargas registradas.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    // Envío por fetch para mostrar el resumen sin recargar; degrada a POST normal.
+    const form = document.getElementById('form');
+    const resultado = document.getElementById('resultado');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector('button');
+      btn.disabled = true; btn.textContent = 'Procesando…';
+      resultado.innerHTML = '';
+      try {
+        const resp = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'fetch', 'Accept': 'application/json' },
+          body: new FormData(form),
+        });
+        const data = await resp.json();
+        if (data.ok) {
+          resultado.innerHTML = '<div class="msg success">' + data.mensaje + '</div>';
+          setTimeout(() => location.reload(), 900);
+        } else {
+          resultado.innerHTML = '<div class="msg error">' + (data.error || 'Error desconocido') + '</div>';
+        }
+      } catch (err) {
+        resultado.innerHTML = '<div class="msg error">Error de red: ' + err + '</div>';
+      } finally {
+        btn.disabled = false; btn.textContent = 'Cargar';
+      }
+    });
+  </script>
+</body>
+</html>
